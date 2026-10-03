@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匿名意見投遞 - TPSHCMCSC</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <img src="tpshcmcsc.png" alt="會徽" class="site-logo" style="width: 70px; height: auto; vertical-align: middle; filter: brightness(0);">
+                <span class="brand-text">TPSHCMCSC</span>
+            </a>
+            <a href="index.html" class="nav-item">返回首頁</a>
+        </div>
+    </nav>
+
+    <header class="hero-header">
+        <h1>🔒 匿名意見投遞</h1>
+        <p class="hero-subtitle">無需填寫個人資料，您的意見將以完全匿名的方式提交給學生會</p>
+    </header>
+
+    <main class="container" style="display: block; max-width: 600px;">
+        <form id="anonymousForm" style="background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <div style="margin-bottom: 16px;">
+                <label style="display:block; font-weight:bold; margin-bottom:6px;">指定處理幹部：</label>
+                <select id="assignee" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                    <option value="不指定">不指定（由學生會共同處理）</option>
+                    <option value="會長">會長</option>
+                    <option value="副會長">副會長</option>
+                    <option value="國中副會長">國中副會長</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display:block; font-weight:bold; margin-bottom:6px;">意見類別：</label>
+                <select id="category" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                    <option value="" disabled selected>請選擇類別</option>
+                    <option value="活動建議">活動建議</option>
+                    <option value="校園設施">校園設施</option>
+                    <option value="規範權益">規範權益</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-weight:bold; margin-bottom:6px;">意見內容：</label>
+                <textarea id="content" rows="5" required placeholder="在此輸入您想反映的內容..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;"></textarea>
+            </div>
+
+            <button type="submit" style="width:100%; background:#d49a00; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer;">確認送出</button>
+        </form>
+    </main>
+
+    <script>
+        document.getElementById('anonymousForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbyW-LakjnyulyNnPrNS06TntWKli3__iewn3qIy_6lUC6NFc6U4NIkyrYyNdc52jCjL/exec';
+
+            const formData = {
+                action: 'submitFeedback',
+                type: 'anonymous',
+                name: '匿名',
+                class_name: '',
+                email: '',
+                assignee: document.getElementById('assignee').value,
+                category: document.getElementById('category').value,
+                content: document.getElementById('content').value
+            };
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = '處理中，請稍候...';
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(formData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('意見已成功匿名送出！');
+                    document.getElementById('anonymousForm').reset();
+                    window.location.href = 'replies.html';
+                } else {
+                    alert('送出失敗：' + (data.error || '未知錯誤'));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('連線發生錯誤，請稍後再試！');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerText = '確認送出';
+            });
+        });
+    </script>
+</body>
+</html>

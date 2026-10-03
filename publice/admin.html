@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生會意見箱管理後台 - TPSHCMCSC</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-card {
+            max-width: 400px;
+            margin: 60px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .login-card select, .login-card input {
+            width: 100%;
+            padding: 10px;
+            margin: 12px 0 20px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .login-card button {
+            width: 100%;
+            padding: 12px;
+            background: #d49a00;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .admin-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .feedback-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .reply-box { margin-top: 15px; }
+        .reply-box textarea {
+            width: 100%;
+            height: 80px;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .gmail-btn {
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .gmail-btn:hover {
+            background: #d93025;
+        }
+        .complete-btn {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <img src="tpshcmcsc.png" alt="會徽" style="width: 60px; height: auto; vertical-align: middle; filter: brightness(0);">
+                <span class="brand-text">TPSHCMCSC 管理後台</span>
+            </a>
+            <a href="index.html" class="nav-item">返回首頁</a>
+        </div>
+    </nav>
+
+    <main class="container" style="display: block;">
+        <div id="login-section" class="login-card">
+            <h2>🔑 身份認證</h2>
+            <p style="color: #64748b; font-size: 0.9rem; margin-top: 5px;">請選擇您的職位以讀取專屬信件</p>
+            
+            <label style="display:block; text-align:left; font-weight:bold; margin-top:15px;">選擇幹部：</label>
+            <select id="officer-select">
+                <option value="會長">會長</option>
+                <option value="副會長">副會長</option>
+                <option value="國中副會長">國中副會長</option>
+            </select>
+
+            <label style="display:block; text-align:left; font-weight:bold;">通行密碼：</label>
+            <input type="password" id="officer-pwd" placeholder="請輸入密碼">
+
+            <button onclick="login()">登入後台</button>
+        </div>
+
+        <div id="admin-dashboard" style="display: none;">
+            <div class="admin-header-bar">
+                <h3>歡迎，<span id="current-officer-title" style="color: #d49a00;"></span>！以下是指派給您的信件：</h3>
+                <button class="logout-btn" onclick="logout()">登出</button>
+            </div>
+
+            <div id="feedback-list"></div>
+        </div>
+    </main>
+
+    <script>
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyW-LakjnyulyNnPrNS06TntWKli3__iewn3qIy_6lUC6NFc6U4NIkyrYyNdc52jCjL/exec';
+        const PASSWORDS = { '會長': 'tpshcmcsc', '副會長': 'tpshcmcsc', '國中副會長': 'tpshcmcsc' };
+        let currentOfficer = '';
+
+        window.onload = function() {
+            const savedOfficer = localStorage.getItem('officer');
+            if (savedOfficer) showDashboard(savedOfficer);
+        };
+
+        function login() {
+            const officer = document.getElementById('officer-select').value;
+            const pwd = document.getElementById('officer-pwd').value;
+            if (PASSWORDS[officer] && pwd === PASSWORDS[officer]) {
+                localStorage.setItem('officer', officer);
+                showDashboard(officer);
+            } else {
+                alert('密碼錯誤！');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('officer');
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('admin-dashboard').style.display = 'none';
+        }
+
+        function showDashboard(officer) {
+            currentOfficer = officer;
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+            document.getElementById('current-officer-title').innerText = officer;
+            loadFeedbacks();
+        }
+
+        function loadFeedbacks() {
+            const listContainer = document.getElementById('feedback-list');
+            listContainer.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:40px;">讀取集中資料庫中...</p>';
+
+            fetch(`${GAS_URL}?action=getAdminFeedbacks&assignee=${encodeURIComponent(currentOfficer)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data || data.length === 0) {
+                        listContainer.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:40px;">目前沒有指派給您的意見信件。</p>';
+                        return;
+                    }
+
+                    listContainer.innerHTML = data.map(item => {
+                        const isRealname = item.type === 'realname';
+
+                        return `
+                            <div class="feedback-card">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <h4>【${item.category}】 ${isRealname ? `🪪 實名：${item.name} (${item.class_name || '未填'})` : '🔒 匿名投遞'}</h4>
+                                    <span style="color: ${item.status === 'replied' ? '#16a34a' : '#d97706'}; font-weight:bold;">
+                                        ${item.status === 'replied' ? '✅ 已處理完成' : '⏳ 待處理'}
+                                    </span>
+                                </div>
+                                <p style="margin: 6px 0 12px; color:#64748b; font-size:0.85rem;">
+                                    指定幹部：${item.assignee || '不指定'} ${isRealname ? ` | Email：<strong>${item.email}</strong>` : ''}
+                                </p>
+                                <p style="margin: 12px 0; background:#f8fafc; padding:12px; border-radius:8px; white-space: pre-line;">${item.content}</p>
+                                <small style="color:#94a3b8;">投遞時間：${item.created_at || '無紀錄'}</small>
+
+                                <div class="reply-box">
+                                    ${item.status === 'replied' 
+                                        ? `<p style="color:#0f766e; background:#f0fdf4; padding:10px; border-radius:6px;"><strong>處理紀錄：</strong> ${item.reply_content}</p>`
+                                        : isRealname 
+                                            ? `<div style="margin-top:10px;">
+                                                    <button onclick="copyAndOpenGmail('${item.email}')" class="gmail-btn">✉️ 複製 Email 並開啟 Gmail.com</button>
+                                                    <button onclick="submitReply(${item.id}, '已透過 Gmail 專人回覆')" class="complete-btn">☑ 勾選標記為處理完成</button>
+                                               </div>`
+                                            : `<textarea id="reply-${item.id}" placeholder="在此輸入要公開回覆的內容..."></textarea>
+                                               <button onclick="submitReplyText(${item.id})" style="background:#0284c7; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">送出公開回覆</button>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                })
+                .catch(err => {
+                    console.error(err);
+                    listContainer.innerHTML = '<p style="text-align:center; color:#ef4444; padding:40px;">連線資料庫發生錯誤，請重新整理。</p>';
+                });
+        }
+
+        function copyAndOpenGmail(email) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(email).then(() => {
+                    alert(`已成功複製 Email (${email})！\n即將開啟 gmail.com，請按下撰寫並貼上收件人即可。`);
+                    window.open('https://mail.google.com', '_blank');
+                }).catch(() => {
+                    window.open('https://mail.google.com', '_blank');
+                });
+            } else {
+                window.open('https://mail.google.com', '_blank');
+            }
+        }
+
+        function submitReplyText(id) {
+            const replyTextarea = document.getElementById(`reply-${id}`);
+            const replyContent = replyTextarea ? replyTextarea.value.trim() : '';
+            if (!replyContent) { alert('請輸入回覆內容！'); return; }
+            submitReply(id, replyContent);
+        }
+
+        function submitReply(id, text) {
+            fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'replyFeedback', id: id, reply_content: text })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('已更新處理狀態！');
+                    loadFeedbacks();
+                } else {
+                    alert('更新失敗：' + (data.error || '未知錯誤'));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('連線失敗，請稍後再試！');
+            });
+        }
+    </script>
+</body>
+</html>
